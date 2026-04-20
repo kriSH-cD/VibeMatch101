@@ -29,7 +29,7 @@ const Discover = () => {
       <header className="fixed top-0 w-full z-50 bg-slate-950/40 backdrop-blur-xl border-none shadow-[0_0_20px_rgba(233,30,140,0.1)]">
         <div className="flex justify-between items-center px-6 py-4 w-full">
           <div className="font-serif italic font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-pink-600 text-2xl tracking-tighter">
-            CampusMatch
+            VibeMatch101
           </div>
           <div className="flex items-center gap-4">
             <button className="text-slate-400 hover:scale-105 transition-transform active:scale-95 duration-200">

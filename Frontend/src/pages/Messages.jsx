@@ -11,7 +11,7 @@ const Messages = () => {
     <div className="min-h-screen bg-[var(--surface-container-lowest)] pb-32 overflow-x-hidden">
       <header className="fixed top-0 w-full z-50 flex justify-between items-center px-6 py-4 bg-slate-950/40 backdrop-blur-xl border-none shadow-[0_0_20px_rgba(233,30,140,0.1)]">
         <div className="flex items-center gap-4">
-          <span className="font-serif italic font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-pink-600 text-2xl tracking-tighter">CampusMatch</span>
+          <span className="font-serif italic font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-pink-600 text-2xl tracking-tighter">VibeMatch101</span>
         </div>
         <div className="flex items-center gap-6 text-slate-400">
           <button className="hover:scale-105 transition-transform active:scale-95 duration-200">

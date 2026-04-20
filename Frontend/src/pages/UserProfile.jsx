@@ -13,7 +13,7 @@ const UserProfile = () => {
       {/* TopNavBar Shell */}
       <header className="fixed top-0 w-full z-50 bg-slate-950/40 backdrop-blur-xl flex justify-between items-center px-6 py-4 shadow-[0_0_20px_rgba(233,30,140,0.1)]">
         <div className="font-serif italic font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-pink-600 text-2xl tracking-tighter">
-          CampusMatch
+          VibeMatch101
         </div>
         <div className="flex items-center gap-6">
           <div className="material-symbols-outlined text-slate-400 hover:scale-105 transition-transform active:scale-95 duration-200 cursor-pointer">notifications</div>

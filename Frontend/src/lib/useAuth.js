@@ -27,7 +27,7 @@ export function useAuth() {
     
     // Fallback: Local dummy authentication to prevent lock-out during frontend dev
     const timer = setTimeout(() => {
-      setUser({ id: "dummy-user-123", email: "elena@campusmatch.edu" });
+      setUser({ id: "dummy-user-123", email: "elena@vibematch101.edu" });
       setLoading(false);
     }, 600);
     
