@@ -1,0 +1,30 @@
+# Environment variables (SECRETS — never commit)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Dependencies
+node_modules/
+Frontend/node_modules/
+
+# Build output
+Frontend/dist/
+dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Misc
+.gemini/
