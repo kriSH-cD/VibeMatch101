@@ -100,7 +100,7 @@ export default function CreatePost({ onPostCreated }) {
       {/* Floating Action Button */}
       <button 
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-28 right-6 w-14 h-14 bg-gradient-to-br from-primary to-primary-container rounded-full flex items-center justify-center text-white shadow-[0_0_20px_rgba(233,30,140,0.4)] z-[60] active:scale-90 transition-transform group cursor-pointer border-none"
+        className="fixed bottom-28 right-6 w-14 h-14 bg-gradient-to-br from-primary to-primary-container rounded-full flex items-center justify-center text-white z-[60] active:scale-90 transition-transform group cursor-pointer border-none"
       >
         <span className="material-symbols-outlined text-3xl transition-transform group-hover:rotate-90">add</span>
         {/* Pulse effect */}

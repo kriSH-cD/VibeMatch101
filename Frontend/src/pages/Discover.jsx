@@ -14,16 +14,23 @@ export default function Discover() {
   const [filterYear, setFilterYear] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const fetchUsers = async () => {
     setLoading(true);
     let query = supabase
       .from('users')
       .select('*')
-      .neq('id', profile.id)
+      .neq('id', profile?.id)
       .order('full_name', { ascending: true });
 
-    if (search.trim()) {
-      query = query.ilike('full_name', `%${search.trim()}%`);
+    if (debouncedSearch.trim()) {
+      query = query.ilike('full_name', `%${debouncedSearch.trim()}%`);
     }
     if (filterBranch) {
       query = query.eq('branch', filterBranch);
@@ -43,14 +50,14 @@ export default function Discover() {
 
   useEffect(() => {
     if (profile) fetchUsers();
-  }, [profile, search, filterBranch, filterYear, filterStatus]);
+  }, [profile, debouncedSearch, filterBranch, filterYear, filterStatus]);
 
   const ChipButton = ({ active, onClick, children }) => (
     <button
       onClick={onClick}
       className={`whitespace-nowrap px-6 py-2.5 rounded-full font-bold text-sm transition-transform active:scale-95 cursor-pointer border-none ${
         active 
-          ? 'bg-gradient-to-br from-primary to-primary-container text-on-primary-container shadow-[0_0_15px_rgba(233,30,140,0.3)]' 
+          ? 'bg-gradient-to-br from-primary to-primary-container text-on-primary-container' 
           : 'bg-surface-container-highest text-on-surface hover:bg-surface-bright'
       }`}
     >

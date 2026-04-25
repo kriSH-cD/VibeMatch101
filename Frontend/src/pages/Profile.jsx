@@ -16,20 +16,21 @@ export default function Profile() {
 
     async function fetchMyPosts() {
       setLoading(true);
-      const { data } = await supabase
+      const postsPromise = supabase
         .from('posts')
         .select('*, author:users(full_name, profile_photo_url, branch)')
         .eq('user_id', profile.id)
         .order('created_at', { ascending: false });
 
-      // Check likes
-      const { data: userLikes } = await supabase
+      const likesPromise = supabase
         .from('likes')
         .select('post_id')
         .eq('user_id', profile.id);
 
-      const likedIds = new Set((userLikes || []).map(l => l.post_id));
-      setPosts((data || []).map(p => ({ ...p, user_liked: likedIds.has(p.id) })));
+      const [postsRes, likesRes] = await Promise.all([postsPromise, likesPromise]);
+
+      const likedIds = new Set((likesRes.data || []).map(l => l.post_id));
+      setPosts((postsRes.data || []).map(p => ({ ...p, user_liked: likedIds.has(p.id) })));
       setLoading(false);
     }
 
@@ -142,7 +143,7 @@ export default function Profile() {
               </div>
             ) : (
               posts.map((p, i) => (
-                <div key={p.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 0.1}s` }}>
+                <div key={p.id} className="animate-fade-in-up" style={{ animationDelay: `${Math.min(i * 0.05, 1)}s` }}>
                   <PostCard post={p} onDelete={(id) => setPosts(prev => prev.filter(x => x.id !== id))} />
                 </div>
               ))

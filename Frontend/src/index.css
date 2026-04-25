@@ -127,7 +127,6 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-primary:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 24px rgba(255, 177, 195, 0.3);
 }
 
 .frosted-nav {
@@ -153,10 +152,10 @@ h1, h2, h3, h4, h5, h6 {
   animation: var(--animate-fade-in-up);
 }
 
-/* Utility glow */
-.glow-sm { box-shadow: 0 0 12px rgba(255, 177, 195, 0.15); }
-.glow-md { box-shadow: 0 0 24px rgba(255, 177, 195, 0.3); }
-.glow-lg { box-shadow: 0 0 36px rgba(255, 177, 195, 0.4); }
+/* Utility glow - disabled as per request */
+.glow-sm { /* box-shadow: 0 0 12px rgba(255, 177, 195, 0.15); */ }
+.glow-md { /* box-shadow: 0 0 24px rgba(255, 177, 195, 0.3); */ }
+.glow-lg { /* box-shadow: 0 0 36px rgba(255, 177, 195, 0.4); */ }
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

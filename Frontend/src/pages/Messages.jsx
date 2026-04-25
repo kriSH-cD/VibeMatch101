@@ -33,7 +33,8 @@ export default function Messages() {
       .from('messages')
       .select('*, sender:users!sender_id(id, full_name, profile_photo_url), receiver:users!receiver_id(id, full_name, profile_photo_url)')
       .or(`sender_id.eq.${profile.id},receiver_id.eq.${profile.id}`)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200); // Only get the most recent 200 messages to determine active conversations
 
     if (error) {
       console.error(error);
@@ -71,10 +72,13 @@ export default function Messages() {
       .from('messages')
       .select('*')
       .or(`and(sender_id.eq.${profile.id},receiver_id.eq.${chatUser.id}),and(sender_id.eq.${chatUser.id},receiver_id.eq.${profile.id})`)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: false }) // Get newest first for limiting
+      .limit(50); // Initial load of 50 messages
 
     if (error) console.error(error);
-    setMessages(data || []);
+    
+    // Reverse for UI display (ascending)
+    setMessages((data || []).reverse());
     setLoadingMessages(false);
 
     await supabase
@@ -160,7 +164,7 @@ export default function Messages() {
     if (!profile) return;
 
     const channel = supabase
-      .channel('messages-realtime')
+      .channel(`messages-${profile.id}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${profile.id}` },
@@ -263,7 +267,7 @@ export default function Messages() {
                 <span className="material-symbols-outlined">image</span>
               </button>
             </div>
-            <button onClick={handleSend} disabled={sending || !newMessage.trim()} className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-primary to-primary-container rounded-full text-on-primary-container shadow-[0_0_15px_rgba(233,30,140,0.3)] hover:scale-105 active:scale-95 transition-transform duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onClick={handleSend} disabled={sending || !newMessage.trim()} className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-primary to-primary-container rounded-full text-on-primary-container hover:scale-105 active:scale-95 transition-transform duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>send</span>
             </button>
           </div>
@@ -285,7 +289,7 @@ export default function Messages() {
         <div className="mb-10 mt-6 space-y-2 animate-fade-in">
           <div className="flex justify-between items-end">
             <h1 className="font-headline text-5xl font-bold tracking-tight text-on-surface italic drop-shadow-[0_0_20px_rgba(233,30,140,0.4)]">Messages</h1>
-            <button className="w-12 h-12 glass-card rounded-full flex items-center justify-center text-primary shadow-[0_0_15px_rgba(233,30,140,0.2)] hover:scale-110 transition-transform">
+            <button className="w-12 h-12 glass-card rounded-full flex items-center justify-center text-primary hover:scale-110 transition-transform">
               <span className="material-symbols-outlined">search</span>
             </button>
           </div>

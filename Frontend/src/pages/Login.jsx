@@ -88,7 +88,7 @@ export default function Login() {
               </p>
               {/* CTA Actions */}
               <div className="flex flex-wrap gap-6 items-center">
-                <Link to="/signup" className="px-10 py-5 bg-primary-container text-white font-label-caps rounded-full shadow-[0_0_20px_rgba(255,75,137,0.3)] hover:shadow-[0_0_40px_rgba(255,75,137,0.5)] hover:scale-105 active:scale-95 transition-all duration-500 ease-out glass-noise overflow-hidden relative group">
+                <Link to="/signup" className="px-10 py-5 bg-primary-container text-white font-label-caps rounded-full shadow-[0_0_20px_rgba(255,75,137,0.3)] hover:scale-105 active:scale-95 transition-all duration-500 ease-out glass-noise overflow-hidden relative group">
                   <span className="relative z-10">Initialize Profile</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                 </Link>
@@ -150,7 +150,7 @@ export default function Login() {
                   <button 
                     disabled={loading}
                     type="submit"
-                    className="w-full py-5 bg-on-background text-background font-bold font-label-caps rounded-xl hover:shadow-[0_0_30px_rgba(255,255,255,0.15)] active:scale-95 transition-all duration-500 custom-cubic flex items-center justify-center space-x-3 disabled:opacity-50">
+                    className="w-full py-5 bg-on-background text-background font-bold font-label-caps rounded-xl active:scale-95 transition-all duration-500 custom-cubic flex items-center justify-center space-x-3 disabled:opacity-50">
                     <span>{loading ? 'AUTHENTICATING...' : 'AUTHENTICATE'}</span>
                     <span className="material-symbols-outlined text-lg">login</span>
                   </button>
@@ -159,7 +159,12 @@ export default function Login() {
                   <p className="font-label-caps text-[11px] text-zinc-500 mb-6">Alternative Entry</p>
                   <div className="flex justify-center gap-6">
                     <button className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all active:scale-90 glass-noise">
-                      <img alt="Google Sign In" className="w-5 h-5 opacity-70 grayscale" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQaFAT17Qz88zb-5wg0V_3Ma19LqDmcxVUcM9Xpq6kyebLUpa0m7JXu77kfgQN_kbG001SXBvDr6Vd-ebE2D-L_WV7Bot8v_GwALVuhftKkwbnvx3FRvGUIEMxBHli_BTqhgASm72DEcRJZp-DVU_Z7gsZsacQQUFAFmCOjNV9-xZ0bfsX7Grq0uZptZxRMPvGiYNQB4_9oWuI1yjkIo42RZuJvGcqheyKl695O-TQTARil_-teK-XcMDbh63Vds-lJxDcHCkZXNvg"/>
+                      <img 
+                        alt="Google Sign In" 
+                        loading="lazy"
+                        className="w-5 h-5 opacity-70 grayscale" 
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQaFAT17Qz88zb-5wg0V_3Ma19LqDmcxVUcM9Xpq6kyebLUpa0m7JXu77kfgQN_kbG001SXBvDr6Vd-ebE2D-L_WV7Bot8v_GwALVuhftKkwbnvx3FRvGUIEMxBHli_BTqhgASm72DEcRJZp-DVU_Z7gsZsacQQUFAFmCOjNV9-xZ0bfsX7Grq0uZptZxRMPvGiYNQB4_9oWuI1yjkIo42RZuJvGcqheyKl695O-TQTARil_-teK-XcMDbh63Vds-lJxDcHCkZXNvg"
+                      />
                     </button>
                     <button className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all active:scale-90 glass-noise">
                       <span className="material-symbols-outlined text-zinc-400">ios</span>
@@ -170,7 +175,12 @@ export default function Login() {
               
               {/* Overlapping Hero Image Fragment */}
               <div className="absolute -bottom-16 -left-20 w-48 h-64 rounded-2xl overflow-hidden border border-white/10 shadow-2xl z-30 hidden xl:block rotate-3">
-                <img alt="Students in Library" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdcmhlgfcdTUo3Isbw5UDuRzyG8hPtKXQ2B5fg717CpQYElWdKeEkfkIfKtzLYXEr_JTGg62QeamrD54OWcsOMkEVWsRpOyvtUNanadKu-ilKTP5fpUr9tocd9yGjBpYMWm97CdTAcWYvSls59Iug_Xcf6HxAnljWJF4am31H2-hXUby-isepVJyKTnFt-DQO3hBObmVXbwvU9Z3QVFEMh08u1byMY8lfR6R9sK6PqsZZ2mA_oFgn_Kr5onzZQ05xtjTKM76eBfqOo"/>
+                <img 
+                  alt="Students in Library" 
+                  loading="lazy"
+                  className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000" 
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdcmhlgfcdTUo3Isbw5UDuRzyG8hPtKXQ2B5fg717CpQYElWdKeEkfkIfKtzLYXEr_JTGg62QeamrD54OWcsOMkEVWsRpOyvtUNanadKu-ilKTP5fpUr9tocd9yGjBpYMWm97CdTAcWYvSls59Iug_Xcf6HxAnljWJF4am31H2-hXUby-isepVJyKTnFt-DQO3hBObmVXbwvU9Z3QVFEMh08u1byMY8lfR6R9sK6PqsZZ2mA_oFgn_Kr5onzZQ05xtjTKM76eBfqOo"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent"></div>
               </div>
             </div>
@@ -199,7 +209,12 @@ export default function Login() {
               <p className="font-label-caps text-[12px] tracking-[0.2em] text-primary-fixed">Instant campus events synced to your lifestyle.</p>
             </div>
             <div className="md:col-span-4 h-80 rounded-[3rem] overflow-hidden border border-white/10 relative group">
-              <img alt="University Architecture" className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-[2s]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPnTY07JMp9vciY1rH-Bzs6WV2LFibhIst-KkIMVGuw1gVPsxp9Wxe4D-rPiyyZbDvlPpIoiP95yhhFH5PrRbFCCLVWgv6Nq8ta1T5zNdYmDq8nWLcWsNWAbeee4Cy6G6bAVfKRlflMIJFawAUE8HE9warMcNspbyFAXjQw5la9ztwXPVsZX5TWcy5sz-dqLU-Ae3kYd7G64WByBhLD1Z8G7xeBMw9evUthX_sgfP7Ecv6meL8hVdaDWHxuaGAkfyNwJdf4EEi6Hra"/>
+              <img 
+                alt="University Architecture" 
+                loading="lazy"
+                className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-[2s]" 
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPnTY07JMp9vciY1rH-Bzs6WV2LFibhIst-KkIMVGuw1gVPsxp9Wxe4D-rPiyyZbDvlPpIoiP95yhhFH5PrRbFCCLVWgv6Nq8ta1T5zNdYmDq8nWLcWsNWAbeee4Cy6G6bAVfKRlflMIJFawAUE8HE9warMcNspbyFAXjQw5la9ztwXPVsZX5TWcy5sz-dqLU-Ae3kYd7G64WByBhLD1Z8G7xeBMw9evUthX_sgfP7Ecv6meL8hVdaDWHxuaGAkfyNwJdf4EEi6Hra"
+              />
               <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
               <div className="absolute bottom-0 left-0 p-8">
                 <div className="font-label-caps text-[10px] text-white/60 mb-2">PREMIUM NETWORK</div>

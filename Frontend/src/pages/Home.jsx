@@ -12,24 +12,30 @@ export default function Home() {
 
   const fetchPosts = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    
+    // Start both queries in parallel if profile exists
+    const postsPromise = supabase
       .from('posts')
       .select('*, author:users(full_name, profile_photo_url, branch)')
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (error) {
-      console.error(error);
+    const likesPromise = profile 
+      ? supabase.from('likes').select('post_id').eq('user_id', profile.id)
+      : Promise.resolve({ data: [] });
+
+    const [postsRes, likesRes] = await Promise.all([postsPromise, likesPromise]);
+
+    if (postsRes.error) {
+      console.error(postsRes.error);
       setLoading(false);
       return;
     }
 
-    if (data && profile) {
-      const { data: userLikes } = await supabase
-        .from('likes')
-        .select('post_id')
-        .eq('user_id', profile.id);
+    const data = postsRes.data;
+    const userLikes = likesRes.data;
 
+    if (data && profile) {
       const likedIds = new Set((userLikes || []).map(l => l.post_id));
       const enriched = data.map(p => ({ ...p, user_liked: likedIds.has(p.id) }));
       setPosts(enriched);
@@ -133,7 +139,7 @@ export default function Home() {
             </div>
           ) : (
             posts.map((post, i) => (
-              <div key={post.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 0.1}s` }}>
+              <div key={post.id} className="animate-fade-in-up" style={{ animationDelay: `${Math.min(i * 0.05, 1)}s` }}>
                 <PostCard post={post} onDelete={handlePostDeleted} />
               </div>
             ))

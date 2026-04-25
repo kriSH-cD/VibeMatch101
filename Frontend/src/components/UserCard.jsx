@@ -8,7 +8,7 @@ export default function UserCard({ user }) {
   const isHostel = hostelText.toLowerCase().includes('hostel');
 
   return (
-    <Link to={`/user/${user.id}`} className="group relative aspect-[3/4] rounded-2xl overflow-hidden glass-card transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.6)] cursor-pointer block no-underline animate-fade-in">
+    <Link to={`/user/${user.id}`} className="group relative aspect-[3/4] rounded-2xl overflow-hidden glass-card transition-all duration-300 hover:-translate-y-2 cursor-pointer block no-underline animate-fade-in">
       <img src={avatar} alt={user.full_name} className="absolute inset-0 w-full h-[65%] object-cover" />
       <div className={`absolute top-3 right-3 z-10 backdrop-blur-md px-2 py-1 rounded-full border ${isHostel ? 'bg-tertiary/20 border-tertiary/30' : 'bg-secondary/20 border-secondary/30'}`}>
         <span className={`text-[10px] font-bold uppercase tracking-tighter ${isHostel ? 'text-tertiary' : 'text-secondary'}`}>{hostelText}</span>

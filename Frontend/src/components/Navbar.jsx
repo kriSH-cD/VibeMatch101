@@ -71,7 +71,7 @@ export default function Navbar() {
               to={path}
               className={`flex flex-col items-center justify-center group active:scale-90 duration-300 relative no-underline ${
                 isActive 
-                  ? 'text-pink-500 bg-pink-500/10 rounded-full px-5 py-2 shadow-[0_0_15px_rgba(233,30,140,0.3)]' 
+                  ? 'text-pink-500 bg-pink-500/10 rounded-full px-5 py-2' 
                   : 'text-slate-500 px-5 py-2 hover:text-pink-300 transition-colors'
               }`}
             >

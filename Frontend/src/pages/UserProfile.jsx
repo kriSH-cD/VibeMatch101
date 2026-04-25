@@ -34,35 +34,18 @@ export default function UserProfile() {
     async function fetchData() {
       setLoading(true);
 
-      const { data: userData } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      setUser(userData);
+      const userPromise = supabase.from('users').select('*').eq('id', userId).single();
+      const blockPromise = supabase.from('blocked_users').select('id').eq('user_id', profile.id).eq('blocked_user_id', userId).limit(1);
+      const postsPromise = supabase.from('posts').select('*, author:users(full_name, profile_photo_url, branch)').eq('user_id', userId).eq('is_anonymous', false).order('created_at', { ascending: false });
+      const likesPromise = supabase.from('likes').select('post_id').eq('user_id', profile.id);
 
-      const { data: blockData } = await supabase
-        .from('blocked_users')
-        .select('id')
-        .eq('user_id', profile.id)
-        .eq('blocked_user_id', userId)
-        .limit(1);
-      setIsBlocked(blockData && blockData.length > 0);
+      const [userRes, blockRes, postsRes, likesRes] = await Promise.all([userPromise, blockPromise, postsPromise, likesPromise]);
 
-      const { data: postsData } = await supabase
-        .from('posts')
-        .select('*, author:users(full_name, profile_photo_url, branch)')
-        .eq('user_id', userId)
-        .eq('is_anonymous', false)
-        .order('created_at', { ascending: false });
-
-      const { data: userLikes } = await supabase
-        .from('likes')
-        .select('post_id')
-        .eq('user_id', profile.id);
-
-      const likedIds = new Set((userLikes || []).map(l => l.post_id));
-      setPosts((postsData || []).map(p => ({ ...p, user_liked: likedIds.has(p.id) })));
+      setUser(userRes.data);
+      setIsBlocked(blockRes.data && blockRes.data.length > 0);
+      
+      const likedIds = new Set((likesRes.data || []).map(l => l.post_id));
+      setPosts((postsRes.data || []).map(p => ({ ...p, user_liked: likedIds.has(p.id) })));
       setLoading(false);
     }
 
@@ -232,7 +215,7 @@ export default function UserProfile() {
               </div>
             ) : (
               posts.map((p, i) => (
-                <div key={p.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 0.1}s` }}>
+                <div key={p.id} className="animate-fade-in-up" style={{ animationDelay: `${Math.min(i * 0.05, 1)}s` }}>
                   <PostCard post={p} />
                 </div>
               ))
