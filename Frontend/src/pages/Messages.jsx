@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -19,13 +19,24 @@ export default function Messages() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
   const [searchConvo, setSearchConvo] = useState('');
+  const [isPartnerTyping, setIsPartnerTyping] = useState(false);
   const messagesEndRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const typingChannelRef = useRef(null);
+  const messagesChannelRef = useRef(null);
+  const activeChatRef = useRef(null);
 
-  const scrollToBottom = () => {
+  // Keep activeChatRef in sync so callbacks can read the latest value
+  useEffect(() => {
+    activeChatRef.current = activeChat;
+  }, [activeChat]);
+
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
-  const fetchConversations = async () => {
+  // ── Fetch conversations ──────────────────────────────────────────────
+  const fetchConversations = useCallback(async () => {
     if (!profile) return;
     setLoadingConvos(true);
 
@@ -34,7 +45,7 @@ export default function Messages() {
       .select('*, sender:users!sender_id(id, full_name, profile_photo_url), receiver:users!receiver_id(id, full_name, profile_photo_url)')
       .or(`sender_id.eq.${profile.id},receiver_id.eq.${profile.id}`)
       .order('created_at', { ascending: false })
-      .limit(200); // Only get the most recent 200 messages to determine active conversations
+      .limit(200);
 
     if (error) {
       console.error(error);
@@ -62,25 +73,27 @@ export default function Messages() {
 
     setConversations(Array.from(convMap.values()));
     setLoadingConvos(false);
-  };
+  }, [profile]);
 
-  const openChat = async (chatUser) => {
+  // ── Open a chat ──────────────────────────────────────────────────────
+  const openChat = useCallback(async (chatUser) => {
     setActiveChat(chatUser);
     setLoadingMessages(true);
+    setIsPartnerTyping(false);
 
     const { data, error } = await supabase
       .from('messages')
       .select('*')
       .or(`and(sender_id.eq.${profile.id},receiver_id.eq.${chatUser.id}),and(sender_id.eq.${chatUser.id},receiver_id.eq.${profile.id})`)
-      .order('created_at', { ascending: false }) // Get newest first for limiting
-      .limit(50); // Initial load of 50 messages
+      .order('created_at', { ascending: false })
+      .limit(50);
 
     if (error) console.error(error);
-    
-    // Reverse for UI display (ascending)
+
     setMessages((data || []).reverse());
     setLoadingMessages(false);
 
+    // Mark unread messages as read
     await supabase
       .from('messages')
       .update({ is_read: true })
@@ -93,8 +106,9 @@ export default function Messages() {
     );
 
     setTimeout(scrollToBottom, 100);
-  };
+  }, [profile, scrollToBottom]);
 
+  // ── Send a message ───────────────────────────────────────────────────
   const handleSend = async () => {
     const trimmed = newMessage.trim();
     if (!trimmed || !activeChat) return;
@@ -112,6 +126,9 @@ export default function Messages() {
 
     setSending(true);
     setNewMessage('');
+
+    // Stop typing indicator immediately
+    broadcastTyping(false);
 
     const optimistic = {
       id: `temp-${Date.now()}`,
@@ -138,14 +155,129 @@ export default function Messages() {
       toast.error('Failed to send message');
       setMessages(prev => prev.filter(m => m.id !== optimistic.id));
     } else {
+      // Replace optimistic message with real one
       setMessages(prev => prev.map(m => m.id === optimistic.id ? data : m));
     }
     setSending(false);
   };
 
+  // ── Typing indicator broadcast ───────────────────────────────────────
+  const broadcastTyping = useCallback((isTyping) => {
+    if (!typingChannelRef.current || !profile) return;
+    typingChannelRef.current.track({
+      user_id: profile.id,
+      is_typing: isTyping,
+    });
+  }, [profile]);
+
+  const handleInputChange = useCallback((e) => {
+    setNewMessage(e.target.value);
+
+    // Broadcast "typing" state
+    broadcastTyping(true);
+
+    // Clear previous timeout and set a new one to stop typing after 2s of inactivity
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      broadcastTyping(false);
+    }, 2000);
+  }, [broadcastTyping]);
+
+  // ── Real-time: messages via postgres_changes ─────────────────────────
+  useEffect(() => {
+    if (!profile) return;
+
+    // Subscribe to ALL messages where this user is sender or receiver
+    const channel = supabase
+      .channel(`rt-messages-${profile.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `receiver_id=eq.${profile.id}`,
+        },
+        (payload) => {
+          const msg = payload.new;
+          const currentChat = activeChatRef.current;
+
+          // If this message is from the currently open chat, append it
+          if (currentChat && msg.sender_id === currentChat.id) {
+            setMessages(prev => {
+              // Prevent duplicates
+              if (prev.some(m => m.id === msg.id)) return prev;
+              return [...prev, msg];
+            });
+            setTimeout(scrollToBottom, 50);
+
+            // Auto mark as read
+            supabase.from('messages').update({ is_read: true }).eq('id', msg.id).then();
+          }
+
+          // Always refresh the conversation list sidebar
+          fetchConversations();
+        }
+      )
+      .subscribe();
+
+    messagesChannelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      messagesChannelRef.current = null;
+    };
+  }, [profile, fetchConversations, scrollToBottom]);
+
+  // ── Real-time: typing indicator via Presence ─────────────────────────
+  useEffect(() => {
+    if (!profile || !activeChat) {
+      setIsPartnerTyping(false);
+      return;
+    }
+
+    // Create a unique room for this pair (sorted IDs ensure both users join the same room)
+    const ids = [profile.id, activeChat.id].sort();
+    const roomName = `typing-${ids[0]}-${ids[1]}`;
+
+    const channel = supabase.channel(roomName, {
+      config: { presence: { key: profile.id } },
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        // Check if the partner is typing
+        const partnerPresence = state[activeChat.id];
+        if (partnerPresence && partnerPresence.length > 0) {
+          setIsPartnerTyping(partnerPresence[0].is_typing === true);
+        } else {
+          setIsPartnerTyping(false);
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            user_id: profile.id,
+            is_typing: false,
+          });
+        }
+      });
+
+    typingChannelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      typingChannelRef.current = null;
+      setIsPartnerTyping(false);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, [profile, activeChat]);
+
+  // ── Initial load ─────────────────────────────────────────────────────
   useEffect(() => {
     fetchConversations();
-  }, [profile]);
+  }, [fetchConversations]);
 
   useEffect(() => {
     if (targetUserId && profile) {
@@ -158,37 +290,16 @@ export default function Messages() {
         if (data) openChat(data);
       })();
     }
-  }, [targetUserId, profile]);
+  }, [targetUserId, profile, openChat]);
 
-  useEffect(() => {
-    if (!profile) return;
-
-    const channel = supabase
-      .channel(`messages-${profile.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${profile.id}` },
-        (payload) => {
-          const msg = payload.new;
-          if (activeChat && msg.sender_id === activeChat.id) {
-            setMessages(prev => [...prev, msg]);
-            setTimeout(scrollToBottom, 50);
-            supabase.from('messages').update({ is_read: true }).eq('id', msg.id);
-          }
-          fetchConversations();
-        }
-      )
-      .subscribe();
-
-    return () => supabase.removeChannel(channel);
-  }, [profile, activeChat]);
-
+  // ── Helpers ──────────────────────────────────────────────────────────
   const filteredConvos = conversations.filter(c =>
     c.user.full_name?.toLowerCase().includes(searchConvo.toLowerCase())
   );
 
   const getAvatar = (u) => u?.profile_photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u?.full_name || 'U')}&background=82c6f1&color=003f5a`;
 
+  // ── Chat View ────────────────────────────────────────────────────────
   if (activeChat) {
     return (
       <div className="bg-surface-container-lowest text-on-surface min-h-screen flex flex-col">
@@ -204,7 +315,18 @@ export default function Messages() {
             </div>
             <div>
               <h1 className="font-serif italic font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-pink-600 text-xl tracking-tighter truncate max-w-[150px] sm:max-w-[250px]">{activeChat.full_name}</h1>
-              <p className="text-[10px] font-sans font-bold uppercase tracking-widest text-tertiary">Online now</p>
+              {isPartnerTyping ? (
+                <p className="text-[10px] font-sans font-bold uppercase tracking-widest text-tertiary flex items-center gap-1.5">
+                  typing
+                  <span className="flex gap-0.5">
+                    <span className="w-1 h-1 bg-tertiary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                    <span className="w-1 h-1 bg-tertiary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-1 h-1 bg-tertiary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                  </span>
+                </p>
+              ) : (
+                <p className="text-[10px] font-sans font-bold uppercase tracking-widest text-tertiary">Online now</p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -238,13 +360,34 @@ export default function Messages() {
                   <div className={`px-5 py-4 font-medium text-sm ${isMine ? 'bg-gradient-to-br from-primary to-primary-container text-on-primary-container shadow-[0_0_20px_rgba(255,70,160,0.3)] rounded-tl-xl rounded-bl-xl rounded-br-xl' : 'glass-card border border-outline-variant/15 text-on-surface rounded-tr-xl rounded-bl-xl rounded-br-xl'}`}>
                     <p style={{ wordBreak: 'break-word' }}>{msg.content}</p>
                   </div>
-                  <span className={`text-[10px] text-outline font-medium ${isMine ? 'mr-2' : 'ml-2'}`}>
-                    {msg.created_at && new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
+                  <div className={`flex items-center gap-1.5 ${isMine ? 'mr-2' : 'ml-2'}`}>
+                    <span className="text-[10px] text-outline font-medium">
+                      {msg.created_at && new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {isMine && (
+                      <span className="material-symbols-outlined text-xs" style={{ fontSize: '14px', color: msg.is_read ? 'var(--color-tertiary)' : 'var(--color-outline)' }}>
+                        {msg.is_read ? 'done_all' : 'done'}
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })
           )}
+
+          {/* Typing indicator bubble inside chat */}
+          {isPartnerTyping && (
+            <div className="flex flex-col items-start max-w-[85%] gap-2 animate-fade-in-up">
+              <div className="glass-card border border-outline-variant/15 text-on-surface rounded-tr-xl rounded-bl-xl rounded-br-xl px-5 py-4">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 bg-on-surface-variant/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                  <span className="w-2 h-2 bg-on-surface-variant/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                  <span className="w-2 h-2 bg-on-surface-variant/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </main>
 
@@ -257,7 +400,7 @@ export default function Messages() {
             <div className="flex-1 relative flex items-center">
               <input
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
+                onChange={handleInputChange}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
                 className="w-full bg-surface-container-high/40 border border-outline-variant/15 rounded-full py-3.5 pl-5 pr-12 text-on-surface placeholder-outline focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all text-sm"
                 placeholder="Type a message..."
@@ -276,7 +419,7 @@ export default function Messages() {
     );
   }
 
-  // Conversation List View
+  // ── Conversation List View ───────────────────────────────────────────
   return (
     <div className="bg-surface-container-lowest min-h-screen pb-32 overflow-x-hidden relative">
       {/* Ambient Glow Effects */}
