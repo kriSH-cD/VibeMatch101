@@ -35,33 +35,34 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const p = await fetchProfile(session.user.id);
-        setProfile(p);
-      }
-      setLoading(false);
-    }).catch(() => {
-      setLoading(false);
-    });
-
-    // Listen for auth changes
+    // Use ONLY onAuthStateChange — it fires INITIAL_SESSION on startup
+    // which replaces the need for a separate getSession() call.
+    // Calling both causes a lock contention deadlock on the auth token.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          const p = await fetchProfile(session.user.id);
+      async (event, session) => {
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+
+        if (currentUser) {
+          const p = await fetchProfile(currentUser.id);
           setProfile(p);
         } else {
           setProfile(null);
         }
+
         setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    // Safety timeout — if auth never responds, stop blocking the UI
+    const timeout = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   // Refresh profile data
