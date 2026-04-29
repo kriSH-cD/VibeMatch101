@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase, isMissingCredentials } from '../lib/supabase';
 
 const AuthContext = createContext({});
@@ -11,7 +11,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   // Fetch user profile from the users table
-  async function fetchProfile(userId) {
+  const fetchProfile = useCallback(async (userId) => {
     try {
       const { data, error } = await supabase
         .from('users')
@@ -26,7 +26,7 @@ export function AuthProvider({ children }) {
     } catch {
       return null;
     }
-  }
+  }, []);
 
   useEffect(() => {
     // If credentials are missing, skip Supabase calls entirely
@@ -39,18 +39,23 @@ export function AuthProvider({ children }) {
     // which replaces the need for a separate getSession() call.
     // Calling both causes a lock contention deadlock on the auth token.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        // Synchronously update user state first
         const currentUser = session?.user ?? null;
         setUser(currentUser);
 
         if (currentUser) {
-          const p = await fetchProfile(currentUser.id);
-          setProfile(p);
+          // Defer the async profile fetch to avoid blocking the auth callback
+          // Using setTimeout(0) ensures this runs after the current event loop
+          setTimeout(async () => {
+            const p = await fetchProfile(currentUser.id);
+            setProfile(p);
+            setLoading(false);
+          }, 0);
         } else {
           setProfile(null);
+          setLoading(false);
         }
-
-        setLoading(false);
       }
     );
 
@@ -63,15 +68,21 @@ export function AuthProvider({ children }) {
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  }, []);
+  }, [fetchProfile]);
 
-  // Refresh profile data
-  async function refreshProfile() {
-    if (user) {
-      const p = await fetchProfile(user.id);
+  // Refresh profile data — called after CreateProfile submission
+  const refreshProfile = useCallback(async () => {
+    // Use getSession to get the freshest user, don't rely on stale state
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUser = session?.user ?? null;
+    if (currentUser) {
+      const p = await fetchProfile(currentUser.id);
+      setUser(currentUser);
       setProfile(p);
+      return p;
     }
-  }
+    return null;
+  }, [fetchProfile]);
 
   // Sign out helper
   async function signOut() {
