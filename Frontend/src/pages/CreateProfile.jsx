@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 
 export default function CreateProfile() {
   const navigate = useNavigate();
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, signOut } = useAuth();
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: { hostel_or_day: 'hostel' }
   });
@@ -84,6 +84,13 @@ export default function CreateProfile() {
         <div className="font-serif italic font-bold text-transparent bg-clip-text bg-gradient-to-br from-pink-400 to-pink-600 text-2xl tracking-tighter">
           CampusMatch
         </div>
+        <button
+          onClick={async () => { await signOut(); navigate('/login'); }}
+          className="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors text-sm font-medium"
+        >
+          <span className="material-symbols-outlined text-lg">logout</span>
+          <span className="hidden sm:inline">Use different account</span>
+        </button>
       </nav>
 
       {/* Main Canvas */}
